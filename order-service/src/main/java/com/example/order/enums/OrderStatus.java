@@ -2,7 +2,7 @@ package com.example.order.enums;
 
 public enum OrderStatus {
 
-	CREATE,
+	PENDING,
 	APPROVED,
 	REJECTED;
 

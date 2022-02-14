@@ -1,15 +1,11 @@
-package com.example.order.entity;
+package com.example.inventory.entity;
 
-import com.example.order.enums.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -20,21 +16,16 @@ import javax.persistence.Table;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "\"order\"")
-public class OrderEntity {
+@Table(name = "inventory")
+public class InventoryEntity {
 
 	@Id
-	private String id;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-	@Column(name = "product")
 	private String product;
-
-	@Enumerated(EnumType.STRING)
-	private OrderStatus status;
-
-	private String username;
 
 	private int amount;
 
-	private String reason;
+	private int price;
 }

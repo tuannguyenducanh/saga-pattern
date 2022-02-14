@@ -18,7 +18,7 @@ public class OrderCreatedProducer {
 	private final KafkaTemplate<String, String> kafkaTemplate;
 	private final ObjectMapper objectMapper;
 
-	public OrderCreatedProducer(KafkaTemplate kafkaTemplate,
+	public OrderCreatedProducer(KafkaTemplate<String, String> kafkaTemplate,
 								ObjectMapper objectMapper) {
 		this.kafkaTemplate = kafkaTemplate;
 		this.objectMapper = objectMapper;
@@ -26,7 +26,7 @@ public class OrderCreatedProducer {
 
 	public void sendMessage(OrderEntity orderEntity) {
 		OrderMessage orderMessage = OrderMessage.builder()
-				.messageId(orderEntity.getUuid())
+				.orderId(orderEntity.getId())
 				.product(orderEntity.getProduct())
 				.amount(orderEntity.getAmount())
 				.username(orderEntity.getUsername())
@@ -43,7 +43,7 @@ public class OrderCreatedProducer {
 	@Data
 	private static class OrderMessage {
 
-		String messageId;
+		String orderId;
 		String product;
 		Integer amount;
 		String username;
