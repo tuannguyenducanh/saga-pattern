@@ -8,5 +8,6 @@ public class OrderRequest {
 	private String product;
 	private int amount;
 	private String username;
+	private String address;
 
 }

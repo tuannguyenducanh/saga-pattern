@@ -1,4 +1,4 @@
-package com.example.inventory.model;
+package com.example.payment.model;
 
 import lombok.Builder;
 import lombok.Data;

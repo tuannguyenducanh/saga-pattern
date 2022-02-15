@@ -1,0 +1,13 @@
+DROP TABLE IF EXISTS `invoice`;
+
+CREATE TABLE `invoice` (
+    ID INTEGER NOT NULL AUTO_INCREMENT,
+    ORDER_ID VARCHAR(256),
+    AMOUNT INTEGER,
+    PRODUCT VARCHAR(256),
+    PRICE INT,
+    USERNAME VARCHAR(256),
+    PRIMARY KEY (ID)
+);
+
+INSERT INTO inventory (product, amount, price) VALUES ("Iphone", 200, 1000);

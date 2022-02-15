@@ -14,7 +14,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.text.MessageFormat;
 import java.util.UUID;
 
 import static com.example.order.enums.OrderStatus.PENDING;
@@ -25,6 +24,7 @@ import static com.example.order.enums.OrderStatus.REJECTED;
 public class OrderService {
 
 	private static final String ORDER_REJECTED_TOPIC = "order.rejected";
+	private static final String PAYMENT_REJECTED_TOPIC = "payment.rejected";
 
 	private final OrderRepository orderRepository;
 	private final OrderCreatedProducer orderCreatedProducer;
@@ -45,6 +45,7 @@ public class OrderService {
 				.product(orderRequest.getProduct())
 				.amount(orderRequest.getAmount())
 				.username(orderRequest.getUsername())
+				.address(orderRequest.getAddress())
 				.status(PENDING)
 				.build();
 		OrderEntity persistedOrder = orderRepository.save(orderEntity);
@@ -54,7 +55,7 @@ public class OrderService {
 
 	@KafkaListener(topics = ORDER_REJECTED_TOPIC)
 	public void consumeOrderRejected(String message) {
-		log.info(MessageFormat.format("Consumer message {0} from topic {1}", message, ORDER_REJECTED_TOPIC));
+		log.info("Consumer message {} from topic {}", message, ORDER_REJECTED_TOPIC);
 		try {
 			OrderRejectedMessage orderRejectedMessage = objectMapper.readValue(message, OrderRejectedMessage.class);
 			orderRepository.findById(orderRejectedMessage.getOrderId())
@@ -62,7 +63,7 @@ public class OrderService {
 						entity.setStatus(REJECTED);
 						entity.setReason(orderRejectedMessage.getReason());
 						orderRepository.save(entity);
-						log.info(MessageFormat.format("Reject order {0}", message, entity.getId()));
+						log.info("Reject order {0}", message, entity.getId());
 					}, () -> {
 						throw new OrderNotFoundException(orderRejectedMessage.orderId);
 					});
@@ -77,6 +78,36 @@ public class OrderService {
 
 		private String orderId;
 		private String reason;
+
+	}
+
+	@KafkaListener(topics = PAYMENT_REJECTED_TOPIC)
+	public void consumePaymentRejectedMessage(String message) {
+		log.info("Consumer message {} from topic {}", message, PAYMENT_REJECTED_TOPIC);
+		try {
+			PaymentRejectedMessage paymentRejectedMessage = objectMapper.readValue(message, PaymentRejectedMessage.class);
+			orderRepository.findById(paymentRejectedMessage.getOrderId())
+					.ifPresentOrElse(entity -> {
+						entity.setStatus(REJECTED);
+						entity.setReason(paymentRejectedMessage.getReason());
+						orderRepository.save(entity);
+						log.info("Reject order {0}", message, entity.getId());
+					}, () -> {
+						throw new OrderNotFoundException(paymentRejectedMessage.orderId);
+					});
+		} catch (JsonProcessingException e) {
+			log.error("Cannot parse order rejected message: " + message, e);
+		}
+	}
+
+	@Data
+	@NoArgsConstructor
+	public class PaymentRejectedMessage {
+
+		private String orderId;
+		private String reason;
+		String product;
+		Integer amount;
 
 	}
 }

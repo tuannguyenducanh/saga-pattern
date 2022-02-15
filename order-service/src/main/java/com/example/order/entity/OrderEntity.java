@@ -37,4 +37,6 @@ public class OrderEntity {
 	private int amount;
 
 	private String reason;
+
+	private String address;
 }

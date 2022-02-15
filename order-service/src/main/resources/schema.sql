@@ -7,5 +7,6 @@ CREATE TABLE `order` (
     status VARCHAR(10),
     username VARCHAR(96),
     reason VARCHAR(512),
+    address VARCHAR(256),
     PRIMARY KEY (id)
 );

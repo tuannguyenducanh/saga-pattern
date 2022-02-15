@@ -47,6 +47,6 @@ public class OrderCreatedProducer {
 		String product;
 		Integer amount;
 		String username;
-
+		String address;
 	}
 }
