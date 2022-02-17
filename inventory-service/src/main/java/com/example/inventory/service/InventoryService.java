@@ -4,7 +4,7 @@ import com.example.inventory.entity.InventoryEntity;
 import com.example.inventory.kafka.InventoryInvalidatedProducer;
 import com.example.inventory.kafka.InventoryProcessedProducer;
 import com.example.inventory.model.InventoryInvalidatedMessage;
-import com.example.inventory.model.PaymentRequestedMessage;
+import com.example.inventory.model.InventoryProcessedMessage;
 import com.example.inventory.repository.InventoryRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,7 +56,7 @@ public class InventoryService {
 				int amount = inventoryEntity.getAmount() - orderCreated.amount;
 				inventoryEntity.setAmount(amount);
 				inventoryRepository.save(inventoryEntity);
-				PaymentRequestedMessage paymentRequestedMessage = PaymentRequestedMessage.builder()
+				InventoryProcessedMessage inventoryProcessedMessage = InventoryProcessedMessage.builder()
 						.orderId(orderCreated.getOrderId())
 						.money(orderCreated.amount * inventoryEntity.getPrice())
 						.product(orderCreated.getProduct())
@@ -64,8 +64,8 @@ public class InventoryService {
 						.username(orderCreated.getUsername())
 						.address(orderCreated.getAddress())
 						.build();
-				inventoryProcessedProducer.sendMessage(paymentRequestedMessage);
-				log.info("Send payment request message {} to topic {}", paymentRequestedMessage, INVENTORY_PROCESSED_TOPIC);
+				inventoryProcessedProducer.sendMessage(inventoryProcessedMessage);
+				log.info("Send payment request message {} to topic {}", inventoryProcessedMessage, INVENTORY_PROCESSED_TOPIC);
 			} else {
 				log.info("Required {} from product {}, only have {}", orderCreated.amount, orderCreated.product, inventoryEntity.getAmount());
 				InventoryInvalidatedMessage inventoryInvalidatedMessage = InventoryInvalidatedMessage.builder()

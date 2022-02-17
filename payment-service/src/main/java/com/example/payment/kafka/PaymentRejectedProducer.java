@@ -1,6 +1,6 @@
 package com.example.payment.kafka;
 
-import com.example.payment.entity.InvoiceEntity;
+import com.example.payment.entity.PaymentEntity;
 import com.example.payment.model.PaymentRejectedMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +23,7 @@ public class PaymentRejectedProducer {
 		this.objectMapper = objectMapper;
 	}
 
-	public void sendMessage(InvoiceEntity message) {
+	public void sendMessage(PaymentEntity message) {
 		PaymentRejectedMessage paymentRejectedMessage = PaymentRejectedMessage
 				.builder()
 				.build();

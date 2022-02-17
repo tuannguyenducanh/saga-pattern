@@ -1,8 +1,8 @@
 server:
-  port: 9002
+  port: 9003
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/payment?useSSL=false
+    url: jdbc:mysql://localhost:3306/invoice?useSSL=false
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -14,7 +14,7 @@ spring:
       mode: always
   kafka:
     consumer:
-      group-id: com.example.payment
+      group-id: com.example.invoice
       bootstrap-servers: localhost:9092
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
