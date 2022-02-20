@@ -6,15 +6,17 @@ import com.example.payment.kafka.PaymentApprovedProducer;
 import com.example.payment.kafka.PaymentRejectedProducer;
 import com.example.payment.model.InventoryProcessedMessage;
 import com.example.payment.repository.InvoiceRepository;
-import com.example.payment.web.model.InvoiceRequest;
+import com.example.payment.web.model.PaymentRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class PaymentService {
 
@@ -36,26 +38,26 @@ public class PaymentService {
 	}
 
 	@KafkaListener(groupId = "com.example.payment", topics = INVENTORY_PROCESSED_TOPIC)
-	public void consume(String message) {
-		InventoryProcessedMessage inventoryProcessedMessage = null;
-		try {
-			inventoryProcessedMessage = objectMapper.readValue(message, InventoryProcessedMessage.class);
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
+	public void consume(String message) throws JsonProcessingException {
+		log.info("Consumer message {} from topic {}", message, INVENTORY_PROCESSED_TOPIC);
+		InventoryProcessedMessage inventoryProcessedMessage = objectMapper.readValue(message, InventoryProcessedMessage.class);
 		PaymentEntity paymentEntity = PaymentEntity.builder()
 				.id(UUID.randomUUID().toString())
 				.total(inventoryProcessedMessage.getMoney())
 				.status(PaymentStatus.PENDING)
+				.orderId(inventoryProcessedMessage.getOrderId())
+				.username(inventoryProcessedMessage.getUsername())
 				.build();
 		paymentRepository.save(paymentEntity);
+		log.info("Persist pending payment {}", paymentEntity);
 	}
 
-	public PaymentEntity updatePaymentStatus(InvoiceRequest invoiceRequest) {
-		Optional<PaymentEntity> invoiceEntityOptional = paymentRepository.findById(invoiceRequest.getInvoiceId());
-		if (invoiceEntityOptional.isPresent()) {
-			PaymentEntity paymentEntity = invoiceEntityOptional.get();
-			if (invoiceRequest.isSuccess()) {
+	public PaymentEntity updatePaymentStatus(PaymentRequest paymentRequest) {
+		PaymentEntity paymentEntity = null;
+		Optional<PaymentEntity> paymentEntityOptional = paymentRepository.findById(paymentRequest.getPaymentId());
+		if (paymentEntityOptional.isPresent()) {
+			paymentEntity = paymentEntityOptional.get();
+			if (paymentRequest.isSuccess()) {
 				paymentEntity.setStatus(PaymentStatus.FINISHED);
 				paymentRepository.save(paymentEntity);
 				paymentApprovedProducer.sendMessage(paymentEntity);
@@ -65,6 +67,6 @@ public class PaymentService {
 				paymentRejectedProducer.sendMessage(paymentEntity);
 			}
 		}
-		return null;
+		return paymentEntity;
 	}
 }

@@ -23,7 +23,7 @@ public class InventoryProcessedProducer {
 	}
 
 	public void sendMessage(InventoryProcessedMessage message) {
-		log.info("Sending payment requested message: " + message);
+		log.info("Sending inventory processed message: " + message);
 		try {
 			kafkaTemplate.send(INVENTORY_PROCESSED_TOPIC, objectMapper.writeValueAsString(message));
 		} catch (JsonProcessingException e) {

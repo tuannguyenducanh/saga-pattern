@@ -9,8 +9,6 @@ import com.example.invoice.repository.InvoiceRepository;
 import com.example.invoice.repository.OrderMessageRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Builder;
-import lombok.Data;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -40,45 +38,37 @@ public class InvoiceService {
 	}
 
 	@KafkaListener(topics = ORDER_CREATED_TOPIC)
-	public void consumeOrderCreated(String message) {
-		try {
-			OrderCreatedMessage orderCreatedMessage = objectMapper.readValue(message, OrderCreatedMessage.class);
-			OrderMessageEntity orderMessageEntity = OrderMessageEntity.builder()
-					.id(orderCreatedMessage.getOrderId())
-					.product(orderCreatedMessage.getProduct())
-					.amount(orderCreatedMessage.getAmount())
-					.username(orderCreatedMessage.getUsername())
-					.address(orderCreatedMessage.getAddress())
-					.orderId(orderCreatedMessage.getOrderId())
-					.build();
-			orderMessageRepository.save(orderMessageEntity);
-		} catch (JsonProcessingException e) {
-			// handle message cannot parse
-		}
+	public void consumeOrderCreated(String message) throws JsonProcessingException {
+		OrderCreatedMessage orderCreatedMessage = objectMapper.readValue(message, OrderCreatedMessage.class);
+		OrderMessageEntity orderMessageEntity = OrderMessageEntity.builder()
+				.id(orderCreatedMessage.getOrderId())
+				.product(orderCreatedMessage.getProduct())
+				.amount(orderCreatedMessage.getAmount())
+				.username(orderCreatedMessage.getUsername())
+				.address(orderCreatedMessage.getAddress())
+				.orderId(orderCreatedMessage.getOrderId())
+				.build();
+		orderMessageRepository.save(orderMessageEntity);
 	}
 
 	@KafkaListener(topics = PAYMENT_APPROVED_TOPIC)
-	public void consumePaymentApproved(String message) {
-		try {
-			PaymentApprovedMessage approvedMessage = objectMapper.readValue(message, PaymentApprovedMessage.class);
-			orderMessageRepository.findById(approvedMessage.getOrderId())
-					.ifPresentOrElse(entity -> {
-						InvoiceEntity invoiceEntity = InvoiceEntity.builder()
-								.id(UUID.randomUUID().toString())
-								.product(approvedMessage.getProduct())
-								.amount(approvedMessage.getAmount())
-								.username(approvedMessage.getUsername())
-								.address(approvedMessage.getAddress())
-								.orderId(approvedMessage.getOrderId())
-								.status(APPROVED)
-								.build();
-						invoiceRepository.save(invoiceEntity);
-						invoiceApprovedProducer.sendMessage(approvedMessage.getOrderId());
-					}, () -> {
-						// handle case when payment come before order
-					});
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
+	public void consumePaymentApproved(String message) throws JsonProcessingException {
+		PaymentApprovedMessage approvedMessage = objectMapper.readValue(message, PaymentApprovedMessage.class);
+		orderMessageRepository.findById(approvedMessage.getOrderId())
+				.ifPresentOrElse(entity -> {
+					InvoiceEntity invoiceEntity = InvoiceEntity.builder()
+							.id(UUID.randomUUID().toString())
+							.product(approvedMessage.getProduct())
+							.amount(approvedMessage.getAmount())
+							.username(approvedMessage.getUsername())
+							.address(approvedMessage.getAddress())
+							.orderId(approvedMessage.getOrderId())
+							.status(APPROVED)
+							.build();
+					invoiceRepository.save(invoiceEntity);
+					invoiceApprovedProducer.sendMessage(approvedMessage.getOrderId());
+				}, () -> {
+					// handle case when payment come before order
+				});
 	}
 }

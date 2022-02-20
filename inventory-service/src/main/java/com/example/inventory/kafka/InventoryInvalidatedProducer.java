@@ -23,7 +23,7 @@ public class InventoryInvalidatedProducer {
 	}
 
 	public void sendMessage(InventoryInvalidatedMessage message) {
-		log.info("Sending order rejected message: " + message);
+		log.info("Sending inventory invali message: " + message);
 		try {
 			kafkaTemplate.send(INVENTORY_INVALIDATED_TOPIC, objectMapper.writeValueAsString(message));
 		} catch (JsonProcessingException e) {

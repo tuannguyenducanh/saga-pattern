@@ -30,6 +30,7 @@ public class PaymentApprovedProducer {
 				.build();
 		log.info("Invoice approved : " + paymentEntity);
 		try {
+			log.info("Sent {} message to topic {}", approvedMessage, TOPIC);
 			kafkaTemplate.send(TOPIC, objectMapper.writeValueAsString(approvedMessage));
 		} catch (JsonProcessingException e) {
 			log.error(approvedMessage + " cannot parse to json");

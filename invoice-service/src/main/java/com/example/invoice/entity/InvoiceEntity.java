@@ -18,7 +18,7 @@ import javax.persistence.Table;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "INVOICE")
+@Table(name = "invoice")
 public class InvoiceEntity {
 
 	@Id
@@ -32,10 +32,10 @@ public class InvoiceEntity {
 	private String product;
 
 	@Column(name = "AMOUNT")
-	private int amount;
+	private Integer amount;
 
 	@Column(name = "PRICE")
-	private int price;
+	private Integer price;
 
 	@Column(name = "TOTAL")
 	private Integer total;

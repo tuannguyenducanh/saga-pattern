@@ -3,6 +3,7 @@ package com.example.order.service;
 import com.example.order.entity.OrderEntity;
 import com.example.order.exception.OrderNotFoundException;
 import com.example.order.kafka.OrderCreatedProducer;
+import com.example.order.model.InvoiceApprovedMessage;
 import com.example.order.repository.OrderRepository;
 import com.example.order.web.model.OrderRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.UUID;
 
+import static com.example.order.enums.OrderStatus.APPROVED;
 import static com.example.order.enums.OrderStatus.PENDING;
 import static com.example.order.enums.OrderStatus.REJECTED;
 
@@ -23,8 +25,9 @@ import static com.example.order.enums.OrderStatus.REJECTED;
 @Service
 public class OrderService {
 
-	private static final String ORDER_REJECTED_TOPIC = "order.rejected";
+	private static final String INVENTORY_INVALIDATED_TOPIC = "inventory.invalidated";
 	private static final String PAYMENT_REJECTED_TOPIC = "payment.rejected";
+	private static final String INVOICE_APPROVED_TOPIC = "invoice.approved";
 
 	private final OrderRepository orderRepository;
 	private final OrderCreatedProducer orderCreatedProducer;
@@ -53,23 +56,19 @@ public class OrderService {
 		return persistedOrder;
 	}
 
-	@KafkaListener(topics = ORDER_REJECTED_TOPIC)
-	public void consumeOrderRejected(String message) {
-		log.info("Consumer message {} from topic {}", message, ORDER_REJECTED_TOPIC);
-		try {
-			OrderRejectedMessage orderRejectedMessage = objectMapper.readValue(message, OrderRejectedMessage.class);
-			orderRepository.findById(orderRejectedMessage.getOrderId())
-					.ifPresentOrElse(entity -> {
-						entity.setStatus(REJECTED);
-						entity.setReason(orderRejectedMessage.getReason());
-						orderRepository.save(entity);
-						log.info("Reject order {0}", message, entity.getId());
-					}, () -> {
-						throw new OrderNotFoundException(orderRejectedMessage.orderId);
-					});
-		} catch (JsonProcessingException e) {
-			log.error("Cannot parse order rejected message: " + message, e);
-		}
+	@KafkaListener(topics = INVENTORY_INVALIDATED_TOPIC)
+	public void consumeOrderRejected(String message) throws JsonProcessingException {
+		log.info("Consume message {} from topic {}", message, INVENTORY_INVALIDATED_TOPIC);
+		OrderRejectedMessage orderRejectedMessage = objectMapper.readValue(message, OrderRejectedMessage.class);
+		orderRepository.findById(orderRejectedMessage.getOrderId())
+				.ifPresentOrElse(entity -> {
+					entity.setStatus(REJECTED);
+					entity.setReason(orderRejectedMessage.getReason());
+					orderRepository.save(entity);
+					log.info("Reject order {0}", message, entity.getId());
+				}, () -> {
+					throw new OrderNotFoundException(orderRejectedMessage.orderId);
+				});
 	}
 
 	@Data
@@ -82,22 +81,18 @@ public class OrderService {
 	}
 
 	@KafkaListener(topics = PAYMENT_REJECTED_TOPIC)
-	public void consumePaymentRejectedMessage(String message) {
-		log.info("Consumer message {} from topic {}", message, PAYMENT_REJECTED_TOPIC);
-		try {
-			PaymentRejectedMessage paymentRejectedMessage = objectMapper.readValue(message, PaymentRejectedMessage.class);
-			orderRepository.findById(paymentRejectedMessage.getOrderId())
-					.ifPresentOrElse(entity -> {
-						entity.setStatus(REJECTED);
-						entity.setReason(paymentRejectedMessage.getReason());
-						orderRepository.save(entity);
-						log.info("Reject order {0}", message, entity.getId());
-					}, () -> {
-						throw new OrderNotFoundException(paymentRejectedMessage.orderId);
-					});
-		} catch (JsonProcessingException e) {
-			log.error("Cannot parse order rejected message: " + message, e);
-		}
+	public void consumePaymentRejectedMessage(String message) throws JsonProcessingException {
+		log.info("Consume message {} from topic {}", message, PAYMENT_REJECTED_TOPIC);
+		PaymentRejectedMessage paymentRejectedMessage = objectMapper.readValue(message, PaymentRejectedMessage.class);
+		orderRepository.findById(paymentRejectedMessage.getOrderId())
+				.ifPresentOrElse(entity -> {
+					entity.setStatus(REJECTED);
+					entity.setReason(paymentRejectedMessage.getReason());
+					orderRepository.save(entity);
+					log.info("Reject order {0}", message, entity.getId());
+				}, () -> {
+					throw new OrderNotFoundException(paymentRejectedMessage.orderId);
+				});
 	}
 
 	@Data
@@ -109,5 +104,18 @@ public class OrderService {
 		String product;
 		Integer amount;
 
+	}
+
+	@KafkaListener(topics = INVOICE_APPROVED_TOPIC)
+	public void consumeInvoiceApprovedTopic(String message) throws JsonProcessingException {
+		log.info("Consume message {} from topic {}", message, INVOICE_APPROVED_TOPIC);
+		InvoiceApprovedMessage approvedMessage = objectMapper.readValue(message, InvoiceApprovedMessage.class);
+		String orderId = approvedMessage.getOrderId();
+		orderRepository.findById(orderId).ifPresentOrElse(orderEntity -> {
+			orderEntity.setStatus(APPROVED);
+			orderRepository.save(orderEntity);
+		}, () -> {
+			// handle in case order cannot find
+		});
 	}
 }

@@ -2,7 +2,7 @@ package com.example.payment.web.controller;
 
 import com.example.payment.entity.PaymentEntity;
 import com.example.payment.service.PaymentService;
-import com.example.payment.web.model.InvoiceRequest;
+import com.example.payment.web.model.PaymentRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,8 +18,8 @@ public class PaymentController {
 	}
 
 	@PostMapping
-	public ResponseEntity updateInvoice(@RequestBody InvoiceRequest invoiceRequest) {
-		PaymentEntity paymentEntity = paymentService.updatePaymentStatus(invoiceRequest);
+	public ResponseEntity updateInvoice(@RequestBody PaymentRequest paymentRequest) {
+		PaymentEntity paymentEntity = paymentService.updatePaymentStatus(paymentRequest);
 		return ResponseEntity.ok(paymentEntity);
 	}
 }

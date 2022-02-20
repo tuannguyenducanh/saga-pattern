@@ -1,6 +1,5 @@
 package com.example.invoice.entity;
 
-import com.example.invoice.enums.InvoiceStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,8 +7,6 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
@@ -18,7 +15,7 @@ import javax.persistence.Table;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "ORDER_MESSAGE")
+@Table(name = "order_message")
 public class OrderMessageEntity {
 
 	@Id

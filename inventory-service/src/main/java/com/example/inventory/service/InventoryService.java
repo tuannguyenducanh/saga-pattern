@@ -41,14 +41,9 @@ public class InventoryService {
 	}
 
 	@KafkaListener(topics = ORDER_CREATED_TOPIC)
-	public void comsumeOrderCreated(String message) {
+	public void comsumeOrderCreated(String message) throws JsonProcessingException {
 		log.info("Consumer message {} from topic {}", message, ORDER_CREATED_TOPIC);
-		OrderCreatedMessage orderCreated = null;
-		try {
-			orderCreated = objectMapper.readValue(message, OrderCreatedMessage.class);
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
+		OrderCreatedMessage orderCreated = objectMapper.readValue(message, OrderCreatedMessage.class);
 		Optional<InventoryEntity> inventoryOptional = inventoryRepository.findByProduct(orderCreated.getProduct());
 		if (inventoryOptional.isPresent()) {
 			InventoryEntity inventoryEntity = inventoryOptional.get();
@@ -65,7 +60,7 @@ public class InventoryService {
 						.address(orderCreated.getAddress())
 						.build();
 				inventoryProcessedProducer.sendMessage(inventoryProcessedMessage);
-				log.info("Send payment request message {} to topic {}", inventoryProcessedMessage, INVENTORY_PROCESSED_TOPIC);
+				log.info("Sent inventory processed message {} to topic {}", inventoryProcessedMessage, INVENTORY_PROCESSED_TOPIC);
 			} else {
 				log.info("Required {} from product {}, only have {}", orderCreated.amount, orderCreated.product, inventoryEntity.getAmount());
 				InventoryInvalidatedMessage inventoryInvalidatedMessage = InventoryInvalidatedMessage.builder()
@@ -75,7 +70,7 @@ public class InventoryService {
 				inventoryInvalidatedProducer.sendMessage(inventoryInvalidatedMessage);
 			}
 		} else {
-			log.info("Could not find product {} in message {}", orderCreated.product, message);
+			log.info("Could not finds product {} in message {}", orderCreated.product, message);
 			InventoryInvalidatedMessage inventoryInvalidatedMessage = InventoryInvalidatedMessage.builder()
 					.orderId(orderCreated.getOrderId())
 					.reason("Product not found")
@@ -85,24 +80,19 @@ public class InventoryService {
 	}
 
 	@KafkaListener(topics = PAYMENT_REJECTED_TOPIC)
-	public void consumePaymentRejected(String message) {
-		try {
-			PaymentRejectedMessage paymentRejectedMessage = objectMapper.readValue(message, PaymentRejectedMessage.class);
-			inventoryRepository.findByProduct(paymentRejectedMessage.getProduct()).ifPresentOrElse(
-					entity -> {
-						Integer amount = entity.getAmount() + paymentRejectedMessage.getAmount();
-						entity.setAmount(amount);
-						inventoryRepository.save(entity);
-					},
-					() -> {
-						log.error("Product {} not found for message {} from {} topic",
-								paymentRejectedMessage.getProduct(), paymentRejectedMessage, PAYMENT_REJECTED_TOPIC);
-					}
-			);
-		} catch (JsonProcessingException e) {
-			log.error("{} cannot parse to PaymentRejectedMessage", message);
-		}
-
+	public void consumePaymentRejected(String message) throws JsonProcessingException {
+		PaymentRejectedMessage paymentRejectedMessage = objectMapper.readValue(message, PaymentRejectedMessage.class);
+		inventoryRepository.findByProduct(paymentRejectedMessage.getProduct()).ifPresentOrElse(
+				entity -> {
+					Integer amount = entity.getAmount() + paymentRejectedMessage.getAmount();
+					entity.setAmount(amount);
+					inventoryRepository.save(entity);
+				},
+				() -> {
+					log.error("Product {} not found for message {} from {} topic",
+							paymentRejectedMessage.getProduct(), paymentRejectedMessage, PAYMENT_REJECTED_TOPIC);
+				}
+		);
 	}
 
 	@Data

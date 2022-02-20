@@ -3,8 +3,6 @@ package com.example.invoice.kafka;
 import com.example.invoice.model.InvoiceApprovedMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -25,14 +23,14 @@ public class InvoiceApprovedProducer {
 	}
 
 	public void sendMessage(String orderId) {
-		InvoiceApprovedMessage orderMessage = InvoiceApprovedMessage.builder()
+		InvoiceApprovedMessage invoiceApprovedMessage = InvoiceApprovedMessage.builder()
 				.orderId(orderId)
 				.build();
-		log.info("Order create message: " + orderMessage);
+		log.info("Order approved message: {} to topic {}", invoiceApprovedMessage, INVOICE_APPROVED_TOPIC);
 		try {
-			kafkaTemplate.send(INVOICE_APPROVED_TOPIC, objectMapper.writeValueAsString(orderMessage));
+			kafkaTemplate.send(INVOICE_APPROVED_TOPIC, objectMapper.writeValueAsString(invoiceApprovedMessage));
 		} catch (JsonProcessingException e) {
-			log.error(orderMessage + " cannot parse to json");
+			log.error(invoiceApprovedMessage + " cannot parse to json");
 		}
 	}
 
